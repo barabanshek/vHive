@@ -9,6 +9,7 @@ import (
 	"github.com/containerd/containerd/namespaces"
 	log "github.com/sirupsen/logrus"
 	ctriface "github.com/vhive-serverless/vhive/ctriface"
+	"github.com/vhive-serverless/vhive/snapshotting"
 )
 
 // Configs.
@@ -35,9 +36,8 @@ func main() {
 
 	// Parse inputs.
 	testImageNameFlag := flag.String("image", "image", "image")
+	testMemorySizeFlag := flag.Int("memsize", 256, "memory size in MB")
 	flag.Parse()
-
-	testImageName := *testImageNameFlag
 
 	// Initialize the context.
 	namespaceName := "firecracker-containerd"
@@ -59,12 +59,40 @@ func main() {
 
 	// Start a uVM.
 	vmID := generateRandomString(10)
-	rsp, metrics, err := orch.StartVM(ctx, vmID, testImageName)
+	rsp, metrics, err := orch.StartVM(ctx, vmID, *testImageNameFlag, *testMemorySizeFlag)
 	if err != nil {
 		log.Fatalf("failed to StartVM %v", err)
 	}
 	log.Info("VM started, IP= %v", rsp.GuestIP)
 	metrics.PrintAll()
+
+	time.Sleep(5 * time.Second)
+
+	// Make snapshot.
+	err = orch.PauseVM(ctx, vmID)
+	if err != nil {
+		log.Fatalf("failed to PauseVM %v", err)
+	}
+	log.Info("VM paused")
+
+	revision := "myrev-4"
+	snap := snapshotting.NewSnapshot(revision, "/fccd/snapshots", *testImageNameFlag)
+	err = snap.CreateSnapDir()
+	if err != nil {
+		log.Fatalf("failed to CreateSnapDir %v", err)
+	}
+
+	err = orch.CreateSnapshot(ctx, vmID, snap)
+	if err != nil {
+		log.Fatalf("failed to CreateSnapshot %v", err)
+	}
+	log.Info("VM snapshotted")
+
+	_, err = orch.ResumeVM(ctx, vmID)
+	if err != nil {
+		log.Fatalf("failed to ResumeVM %v", err)
+	}
+	log.Info("VM resumed")
 
 	time.Sleep(5 * time.Second)
 
@@ -74,7 +102,6 @@ func main() {
 		log.Fatalf("failed to StopVM %v", err)
 	}
 	log.Info("VM stopped")
-	metrics.PrintAll()
 
 	log.Info("The e2e experimens are finished, bye!")
 }

@@ -68,11 +68,11 @@ const (
 )
 
 // StartVM Boots a VM if it does not exist
-func (o *Orchestrator) StartVM(ctx context.Context, vmID, imageName string) (_ *StartVMResponse, _ *metrics.Metric, retErr error) {
-	return o.StartVMWithEnvironment(ctx, vmID, imageName, []string{})
+func (o *Orchestrator) StartVM(ctx context.Context, vmID, imageName string, memSize int) (_ *StartVMResponse, _ *metrics.Metric, retErr error) {
+	return o.StartVMWithEnvironment(ctx, vmID, imageName, []string{}, memSize)
 }
 
-func (o *Orchestrator) StartVMWithEnvironment(ctx context.Context, vmID, imageName string, environmentVariables []string) (_ *StartVMResponse, _ *metrics.Metric, retErr error) {
+func (o *Orchestrator) StartVMWithEnvironment(ctx context.Context, vmID, imageName string, environmentVariables []string, memSize int) (_ *StartVMResponse, _ *metrics.Metric, retErr error) {
 	var (
 		startVMMetric *metrics.Metric = metrics.NewMetric()
 		tStart        time.Time
@@ -105,6 +105,8 @@ func (o *Orchestrator) StartVMWithEnvironment(ctx context.Context, vmID, imageNa
 
 	tStart = time.Now()
 	conf := o.getVMConfig(vm)
+	conf.MachineCfg.MemSizeMib = uint32(memSize)
+
 	_, err = o.fcClient.CreateVM(ctx, conf)
 	startVMMetric.MetricMap[metrics.FcCreateVM] = metrics.ToUS(time.Since(tStart))
 	if err != nil {
