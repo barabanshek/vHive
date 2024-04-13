@@ -24,7 +24,6 @@ package ctriface
 
 import (
 	"context"
-	"github.com/vhive-serverless/vhive/snapshotting"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -32,6 +31,8 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/vhive-serverless/vhive/snapshotting"
 
 	log "github.com/sirupsen/logrus"
 
@@ -316,7 +317,7 @@ func getK8sDNS() []string {
 }
 
 func (o *Orchestrator) getVMConfig(vm *misc.VM) *proto.CreateVMRequest {
-	kernelArgs := "ro noapic reboot=k panic=1 pci=off nomodules systemd.log_color=false systemd.unit=firecracker.target init=/sbin/overlay-init tsc=reliable quiet 8250.nr_uarts=0 ipv6.disable=1"
+	kernelArgs := "console=ttyS0 noapic reboot=k panic=1 pci=off nomodules ro systemd.unified_cgroup_hierarchy=0 systemd.journald.forward_to_console systemd.unit=firecracker.target init=/sbin/overlay-init"
 
 	return &proto.CreateVMRequest{
 		VMID:           vm.ID,
