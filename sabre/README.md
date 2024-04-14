@@ -30,7 +30,17 @@ sudo env "PATH=$PATH" go run hello_world.go -image=docker.io/library/hello-world
 
 ### With default snapshotting
 
+This example will start a uVM with the specified container, run it for a bit, pause, make a **default** **Diff** snapshot (default dirty-page based snapshot from original `firecracker`), terminate, and restore from the snapshot.
+
+```
+```
+
 ### With Sabre snapshotting
+
+This example will start a uVM with the specified container, run it for a bit, pause, make a **Sabre** **Diff** snapshot (compressed dirty-page based snapshot based on Sabre), terminate, and restore from the snapshot.
+
+```
+```
 
 ### With REAP snapshotting
 
