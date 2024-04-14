@@ -2,7 +2,7 @@
 
 Implementation of Sabre plugin for Firecracker described in the paper ["Sabre: Improving Memory Prefetching in Serverless MicroVMs with Near-Memory Hardware-Accelerated Compression"]().
 
-This reposirtory is fork of [vHive](https://github.com/vhive-serverless/vHive) which allows to run Serverless images in firecracker, invoke end-to-end functions, and make/manage snapshots.
+This reposirtory is fork of [vHive](https://github.com/vhive-serverless/vHive) which allows to run Serverless images in firecracker, invoke end-to-end functions, and make/manage snapshots from golang applications.
 
 
 ## Prerequisites
