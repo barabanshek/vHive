@@ -66,7 +66,7 @@ func main() {
 	log.Info("VM started, IP= %v", rsp.GuestIP)
 	metrics.PrintAll()
 
-	time.Sleep(5 * time.Second)
+	time.Sleep(10 * time.Second)
 
 	// Make snapshot.
 	err = orch.PauseVM(ctx, vmID)
@@ -94,7 +94,26 @@ func main() {
 	}
 	log.Info("VM resumed")
 
-	time.Sleep(5 * time.Second)
+	time.Sleep(3 * time.Second)
+
+	// Stop the uVM.
+	err = orch.StopSingleVM(ctx, vmID)
+	if err != nil {
+		log.Fatalf("failed to StopVM %v", err)
+	}
+	log.Info("VM stopped")
+
+	time.Sleep(3 * time.Second)
+
+	// Load snapshopt.
+	_, metrics, err = orch.LoadSnapshot(ctx, vmID, snap, *testMemorySizeFlag)
+	if err != nil {
+		log.Fatalf("failed to LoadSnapshot %v", err)
+	}
+	log.Info("VM resumed from the snapshot")
+	metrics.PrintAll()
+
+	time.Sleep(3 * time.Second)
 
 	// Stop the uVM.
 	err = orch.StopSingleVM(ctx, vmID)
