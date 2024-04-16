@@ -59,4 +59,22 @@ This example will start a uVM with the specified container, run it for a bit, pa
 
 ### With REAP snapshotting
 
+Implementation of REAP snapshots from the [original paper](https://dl.acm.org/doi/10.1145/3445814.3446714).
+
+This example will start a uVM with the specified container, run it for a bit, pause, make a default snapshot, terminate, restore from the snapshot, do **REAP recording phase**, terminate, restore from the **REAP** snapshot.
+
+```
+```
+
+### With Sabre snapshotting
+
+Implementation of REAP snapshots from the [original paper](https://dl.acm.org/doi/10.1145/3445814.3446714) + compression with Sabre.
+
+This example will start a uVM with the specified container, run it for a bit, pause, make a default snapshot, terminate, restore from the snapshot, do **REAP recording phase**, **compress with Sabre**, terminate, restore from the **copmpressed REAP** snapshot.
+
+```
+```
+
+### With REAP snapshotting
+
 ### With REAP + Sabre snapshotting
