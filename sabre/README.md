@@ -28,12 +28,26 @@ sudo firecracker-containerd --config /etc/firecracker-containerd/config.toml
 sudo env "PATH=$PATH" go run hello_world.go -image=docker.io/library/hello-world:latest -memsize=256 -example=start-stop
 ```
 
-### With default snapshotting
+### With default Full snapshotting
+
+This example will start a uVM with the specified container, run it for a bit, pause, make a **default** **Full** snapshot, terminate, and restore from the snapshot.
+
+```
+sudo env "PATH=$PATH" go run hello_world.go -image=docker.io/library/hello-world:latest -memsize=256 -example=start-snapshot-stop-resume-stop
+
+# Check the snapshot file (`mem_file` size should be equal to uVM's memsize size)
+ls -sh /fccd/snapshots/myrev-4/*
+```
+
+### With default Diff snapshotting
 
 This example will start a uVM with the specified container, run it for a bit, pause, make a **default** **Diff** snapshot (default dirty-page based snapshot from original `firecracker`), terminate, and restore from the snapshot.
 
 ```
 sudo env "PATH=$PATH" go run hello_world.go -image=docker.io/library/hello-world:latest -memsize=256 -example=start-diff-snapshot-stop-resume-stop
+
+# Check the snapshot file (`mem_file` size should be less than uVM's memsize size)
+ls -sh /fccd/snapshots/myrev-4/*
 ```
 
 ### With Sabre snapshotting
