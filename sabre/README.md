@@ -66,7 +66,7 @@ This example will start a uVM with the specified container, run it for a bit, pa
 ```
 ```
 
-### With Sabre snapshotting
+### With REAP + Sabre snapshotting
 
 Implementation of REAP snapshots from the [original paper](https://dl.acm.org/doi/10.1145/3445814.3446714) + compression with Sabre.
 
@@ -74,7 +74,3 @@ This example will start a uVM with the specified container, run it for a bit, pa
 
 ```
 ```
-
-### With REAP snapshotting
-
-### With REAP + Sabre snapshotting
