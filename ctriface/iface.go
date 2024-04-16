@@ -419,6 +419,11 @@ func (o *Orchestrator) CreateSnapshot(ctx context.Context, vmID string, snap *sn
 		VMID:         vmID,
 		SnapshotPath: snap.GetSnapshotFilePath(),
 		MemFilePath:  snap.GetMemFilePath(),
+		DiffSnapshot: false,
+	}
+
+	if snap.Type == snapshotting.DiffSnapshot {
+		req.DiffSnapshot = true
 	}
 
 	if _, err := o.fcClient.CreateSnapshot(ctx, req); err != nil {

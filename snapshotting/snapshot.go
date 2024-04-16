@@ -34,12 +34,19 @@ import (
 
 // Snapshot identified by revision
 // Only capitalized fields are serialised / deserialised
+type SnapshotType int
+const (
+	FullSnapshot SnapshotType = 1
+	DiffSnapshot SnapshotType = 2
+)
+
 type Snapshot struct {
 	id                string
 	ready             bool
 	ContainerSnapName string
 	snapDir           string
 	Image             string
+	Type              SnapshotType
 }
 
 func NewSnapshot(id, baseFolder, image string) *Snapshot {

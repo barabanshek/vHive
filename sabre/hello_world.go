@@ -55,7 +55,7 @@ func stop(orch *ctriface.Orchestrator, ctx context.Context, vmID string) error {
 	return nil
 }
 
-func snapshot_basic(orch *ctriface.Orchestrator, ctx context.Context, vmID string, image_name string, mem_size int) error {
+func snapshot_basic(orch *ctriface.Orchestrator, ctx context.Context, vmID string, image_name string, mem_size int, snapshot_type snapshotting.SnapshotType) error {
 	if err := orch.PauseVM(ctx, vmID); err != nil {
 		return fmt.Errorf("failed to PauseVM, error was: %v", err)
 	}
@@ -66,6 +66,8 @@ func snapshot_basic(orch *ctriface.Orchestrator, ctx context.Context, vmID strin
 	if err := snap.CreateSnapDir(); err != nil {
 		return fmt.Errorf("failed to CreateSnapDir %v", err)
 	}
+
+	snap.Type = snapshot_type
 
 	if err := orch.CreateSnapshot(ctx, vmID, snap); err != nil {
 		return fmt.Errorf("failed to CreateSnapshot %v", err)
@@ -132,7 +134,8 @@ func main() {
 		// Run experiments.
 		switch *testExampleNameFlag {
 		case "start-stop": error_ = stop(orch, ctx, vmID)
-		case "start-snapshot-stop-resume-stop": error_ = snapshot_basic(orch, ctx, vmID, *testImageNameFlag, *testMemorySizeFlag)
+		case "start-snapshot-stop-resume-stop": error_ = snapshot_basic(orch, ctx, vmID, *testImageNameFlag, *testMemorySizeFlag, snapshotting.FullSnapshot)
+		case "start-diff-snapshot-stop-resume-stop": error_ = snapshot_basic(orch, ctx, vmID, *testImageNameFlag, *testMemorySizeFlag, snapshotting.DiffSnapshot)
 		default: {
 			log.Info("Unknown experiment.")
 			error_ = stop(orch, ctx, vmID)

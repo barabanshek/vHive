@@ -28,6 +28,8 @@ github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d/go.mod h1:W
 github.com/awslabs/tc-redirect-tap v0.0.0-20211025175357-e30dfca224c2/go.mod h1:aWGDsVdyHc6k3HOw2xeeNTGFHnHxG05VVUxEoKkpMdo=
 github.com/barabanshek/firecracker-containerd v0.1.0-43f6e71 h1:HGt8QtzVeQsuRC9AOiGOmPmksqZBjyvSd7mUBoNViLA=
 github.com/barabanshek/firecracker-containerd v0.1.0-43f6e71/go.mod h1:HPKQwkC2ZwD5y7tmnZG1nCcdAbB/2AQ8DIQ29/7BVmI=
+github.com/barabanshek/firecracker-containerd v0.1.0-45d6c17 h1:LzcMQHxuDQ+h4VVKxmcanAqiMtTbNiT8/Qfq45OkROM=
+github.com/barabanshek/firecracker-containerd v0.1.0-45d6c17/go.mod h1:pOPSqlEjpqU/VIiSIByAU/j2rT9Og++a5bb7uW6XhH8=
 github.com/benbjohnson/clock v1.0.3/go.mod h1:bGMdMPoPVvcYyt1gHDf4J2KE153Yf9BuiUKYMaxlTDM=
 github.com/boombuler/barcode v1.0.1/go.mod h1:paBWMcWSl3LHKBqUq+rly7CNSldXjb2rDl3JlRe0mD8=
 github.com/buger/jsonparser v1.1.1/go.mod h1:6RYKKt7H4d4+iWqouImQ9R2FZql3VbhNgx27UK13J/0=
