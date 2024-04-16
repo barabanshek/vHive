@@ -67,6 +67,7 @@ func snapshot_basic(orch *ctriface.Orchestrator, ctx context.Context, vmID strin
 		return fmt.Errorf("failed to CreateSnapDir %v", err)
 	}
 
+	// Set type of snapshot.
 	snap.Type = snapshot_type
 
 	if err := orch.CreateSnapshot(ctx, vmID, snap); err != nil {
@@ -136,6 +137,7 @@ func main() {
 		case "start-stop": error_ = stop(orch, ctx, vmID)
 		case "start-snapshot-stop-resume-stop": error_ = snapshot_basic(orch, ctx, vmID, *testImageNameFlag, *testMemorySizeFlag, snapshotting.FullSnapshot)
 		case "start-diff-snapshot-stop-resume-stop": error_ = snapshot_basic(orch, ctx, vmID, *testImageNameFlag, *testMemorySizeFlag, snapshotting.DiffSnapshot)
+		case "start-sabre-diff-snapshot-stop-resume-stop": error_ = snapshot_basic(orch, ctx, vmID, *testImageNameFlag, *testMemorySizeFlag, snapshotting.DiffSnapshotWithCompression)
 		default: {
 			log.Info("Unknown experiment.")
 			error_ = stop(orch, ctx, vmID)

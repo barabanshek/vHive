@@ -420,10 +420,16 @@ func (o *Orchestrator) CreateSnapshot(ctx context.Context, vmID string, snap *sn
 		SnapshotPath: snap.GetSnapshotFilePath(),
 		MemFilePath:  snap.GetMemFilePath(),
 		DiffSnapshot: false,
+		DoCompression: false,
 	}
 
 	if snap.Type == snapshotting.DiffSnapshot {
 		req.DiffSnapshot = true
+	}
+
+	if snap.Type == snapshotting.DiffSnapshotWithCompression {
+		req.DiffSnapshot = true
+		req.DoCompression = true
 	}
 
 	if _, err := o.fcClient.CreateSnapshot(ctx, req); err != nil {
@@ -500,11 +506,17 @@ func (o *Orchestrator) LoadSnapshot(ctx context.Context, vmID string, snap *snap
 	}
 
 	conf := o.getVMConfig(vm)
-	conf.LoadSnapshot = true
 	conf.SnapshotPath = snap.GetSnapshotFilePath()
 	conf.MemFilePath = snap.GetMemFilePath()
 	conf.ContainerSnapshotPath = containerSnap.GetDevicePath()
 	conf.MachineCfg.MemSizeMib = uint32(memSize)
+
+	conf.LoadSnapshot = true
+	if snap.Type == snapshotting.DiffSnapshotWithCompression {
+		conf.LoadCompressedSnapshot = true
+	} else {
+		conf.LoadCompressedSnapshot = false
+	}
 
 	if o.GetUPFEnabled() {
 		if err := o.memoryManager.FetchState(vmID); err != nil {

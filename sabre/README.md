@@ -55,6 +55,10 @@ ls -sh /fccd/snapshots/myrev-4/*
 This example will start a uVM with the specified container, run it for a bit, pause, make a **Sabre** **Diff** snapshot (compressed dirty-page based snapshot based on Sabre), terminate, and restore from the snapshot.
 
 ```
+sudo env "PATH=$PATH" go run hello_world.go -image=docker.io/library/hello-world:latest -memsize=256 -example=start-sabre-diff-snapshot-stop-resume-stop
+
+# Check the Sabre snapshot file (`mem_file.snapshot` size should be MUCH less than uVM's memsize size)
+ls -sh /fccd/snapshots/myrev-4/*
 ```
 
 ### With REAP snapshotting

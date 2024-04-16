@@ -38,6 +38,8 @@ type SnapshotType int
 const (
 	FullSnapshot SnapshotType = 1
 	DiffSnapshot SnapshotType = 2
+	// There is no FullSnapshotWithCompression since it does not make sense
+	DiffSnapshotWithCompression SnapshotType = 3
 )
 
 type Snapshot struct {
