@@ -25,7 +25,7 @@ The hello-world test will start a uVM with the default hello-world docker image 
 sudo firecracker-containerd --config /etc/firecracker-containerd/config.toml
 
 # Run a hello-world test
-sudo env "PATH=$PATH" go run hello_world.go -image=docker.io/library/hello-world:latest -memsize=512
+sudo env "PATH=$PATH" go run hello_world.go -image=docker.io/library/hello-world:latest -memsize=256 -example=start-stop
 ```
 
 ### With default snapshotting
@@ -33,6 +33,7 @@ sudo env "PATH=$PATH" go run hello_world.go -image=docker.io/library/hello-world
 This example will start a uVM with the specified container, run it for a bit, pause, make a **default** **Diff** snapshot (default dirty-page based snapshot from original `firecracker`), terminate, and restore from the snapshot.
 
 ```
+sudo env "PATH=$PATH" go run hello_world.go -image=docker.io/library/hello-world:latest -memsize=256 -example=start-diff-snapshot-stop-resume-stop
 ```
 
 ### With Sabre snapshotting
