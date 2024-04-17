@@ -24,6 +24,10 @@ The hello-world test will start a uVM with the default hello-world docker image 
 # Start firecracker-containerd
 sudo firecracker-containerd --config /etc/firecracker-containerd/config.toml
 
+# Make sure go is in the PATH, for example:
+export GO_VERSION='1.21'
+export PATH=/usr/lib/go-${GO_VERSION}/bin:$PATH
+
 # Run a hello-world test
 sudo env "PATH=$PATH" go run hello_world.go -image=docker.io/library/hello-world:latest -memsize=256 -example=start-stop
 ```
