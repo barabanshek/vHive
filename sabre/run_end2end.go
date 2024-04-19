@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"regexp"
 	"strconv"
+	"os"
 
 	"github.com/containerd/containerd/namespaces"
 	log "github.com/sirupsen/logrus"
@@ -113,33 +114,33 @@ func dropCaches(orch *ctriface.Orchestrator, ctx context.Context) error {
 	return nil
 }
 
-func snapshot_basic(orch *ctriface.Orchestrator, ctx context.Context, vmID string, image_name string, mem_size int, snapshot_type snapshotting.SnapshotType) error {
+func snapshot_basic(orch *ctriface.Orchestrator, ctx context.Context, vmID string, image_name string, mem_size int, snapshot_type snapshotting.SnapshotType) (error, float64) {
 	if err := orch.PauseVM(ctx, vmID); err != nil {
-		return fmt.Errorf("failed to PauseVM, error was: %v", err)
+		return fmt.Errorf("failed to PauseVM, error was: %v", err), -1
 	}
 	log.Info("VM paused")
 
 	revision := "myrev-4"
 	snap := snapshotting.NewSnapshot(revision, "/fccd/snapshots", image_name)
 	if err := snap.CreateSnapDir(); err != nil {
-		return fmt.Errorf("failed to CreateSnapDir %v", err)
+		return fmt.Errorf("failed to CreateSnapDir %v", err), -1
 	}
 
 	// Set type of snapshot.
 	snap.Type = snapshot_type
 
 	if err := orch.CreateSnapshot(ctx, vmID, snap); err != nil {
-		return fmt.Errorf("failed to CreateSnapshot %v", err)
+		return fmt.Errorf("failed to CreateSnapshot %v", err), -1
 	}
 	log.Info("VM snapshotted")
 
 	if _, err := orch.ResumeVM(ctx, vmID); err != nil {
-		return fmt.Errorf("failed to ResumeVM %v", err)
+		return fmt.Errorf("failed to ResumeVM %v", err), -1
 	}
 	log.Info("VM resumed")
 
 	if err := orch.StopSingleVM(ctx, vmID); err != nil {
-		return fmt.Errorf("failed to stopVM.", err)
+		return fmt.Errorf("failed to stopVM.", err), -1
 	}
 	log.Info("VM stopped")
 
@@ -147,17 +148,19 @@ func snapshot_basic(orch *ctriface.Orchestrator, ctx context.Context, vmID strin
 	// This way, we emulate cold start in the same way as we would be
 	// loading the snapshot on a new machine.
 	if err := dropCaches(orch, ctx); err != nil {
-		return fmt.Errorf("failed to srop caches.")
+		return fmt.Errorf("failed to srop caches."), -1
 	}
 
+	latency := 0.0
 	if _, metrics, err := orch.LoadSnapshot(ctx, vmID, snap, mem_size); err != nil {
-		return fmt.Errorf("failed to LoadSnapshot %v", err)
+		return fmt.Errorf("failed to LoadSnapshot %v", err), -1
 	} else {
 		log.Info("VM loaded from the snapshot:")
 		metrics.PrintAll()
+		latency = metrics.Total()
 	}
 
-	return nil
+	return nil, latency
 }
 
 func main() {
@@ -166,6 +169,8 @@ func main() {
 	// Parse inputs.
 	testImageNameFlag := flag.String("image", "image", "image name")
 	testMemorySizeFlag := flag.Int("memsize", 256, "memory size in MB")
+	testSnapshotTypeFlag := flag.String("snapshot", "Diff", "type of snapshot")
+	testInvocationCmdFlag := flag.String("invoke_cmd", "...", "invocation command")
 	flag.Parse()
 
 	// Initialize the context.
@@ -190,42 +195,47 @@ func main() {
 	// Start a uVM and run examples.
 	//
 	error_ := false
-	lat_before_snapshot := -1
-	lat_after_snapshot := -1
+	lat_restore_snapshot := 0.0
+	lat_cold_start := -1
 	if err, vmID := startVM(orch, ctx, *testImageNameFlag, *testMemorySizeFlag); err == nil {
-		time.Sleep(5 * time.Second)
+		time.Sleep(10 * time.Second)
 
 		// Invoke.
-		if lat, err := invokeServer("image_processing_low"); err != nil {
+		if _, err := invokeServer(*testInvocationCmdFlag); err != nil {
 			log.Fatal("Failed to invoke a function")
 			error_ = error_ || true
-		} else {
-			lat_before_snapshot = lat
 		}
-
-		// if lat, err := invokeServer("image_processing_low"); err != nil {
-		// 	log.Fatal("Failed to invoke a function")
-		// 	error_ = error_ || true
-		// } else {
-		// 	lat_before_snapshot = lat
-		// }
 
 		time.Sleep(1 * time.Second)
 
 		// Make a snapshot, load from snapshot.
-		if err := snapshot_basic(orch, ctx, vmID, *testImageNameFlag, *testMemorySizeFlag, snapshotting.DiffSnapshot); err != nil {
-			log.Fatal("Failed to make-load snapshot")
-			error_ = error_ || true
+		if *testSnapshotTypeFlag == "Diff" {
+			log.Info("Running with Diff snapshot...")
+			if err, lat := snapshot_basic(orch, ctx, vmID, *testImageNameFlag, *testMemorySizeFlag, snapshotting.DiffSnapshot); err != nil {
+				log.Fatal("Failed to make-load snapshot")
+				error_ = error_ || true
+			} else {
+				lat_restore_snapshot = lat
+			}
+		}
+		if *testSnapshotTypeFlag == "DiffCompressed" {
+			log.Info("Running with DiffCompressed (Sabre) snapshot...")
+			if err, lat := snapshot_basic(orch, ctx, vmID, *testImageNameFlag, *testMemorySizeFlag, snapshotting.DiffSnapshotWithCompression); err != nil {
+				log.Fatal("Failed to make-load snapshot")
+				error_ = error_ || true
+			} else {
+				lat_restore_snapshot = lat
+			}
 		}
 
-		time.Sleep(5 * time.Second)
+		time.Sleep(10 * time.Second)
 
 		// Invoke again.
-		if lat, err := invokeServer("image_processing_low"); err != nil {
+		if lat, err := invokeServer(*testInvocationCmdFlag); err != nil {
 			log.Fatal("Failed to invoke a function")
 			error_ = error_ || true
 		} else {
-			lat_after_snapshot = lat
+			lat_cold_start = lat
 		}
 
 		if err := stop(orch, ctx, vmID); err != nil {
@@ -234,9 +244,9 @@ func main() {
 	};
 
 	if error_ == false {
-		log.Info("Experiment finished, results: ")
-		log.Info("    cold start before snapshot (us): ", lat_before_snapshot)
-		log.Info("    cold start after snapshot (us): ", lat_after_snapshot)
+		fmt.Fprintf(os.Stdout, "\033[0;31m %s\n", "Experiment finished, results: ")
+		fmt.Fprintf(os.Stdout, "\033[0;31m %s %f\n", "    restore from snapshot (us): ", lat_restore_snapshot)
+		fmt.Fprintf(os.Stdout, "\033[0;31m %s %d\n", "    cold start (us): ", lat_cold_start)
 	} else {
 		log.Fatal("Experiment crashed.")
 	}

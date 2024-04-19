@@ -4,6 +4,6 @@
 echo 3 | sudo tee /proc/sys/vm/drop_caches
 
 # Pre-warm grpc client.
-${GRPC_CLI}/grpc_cli call localhost:11111 fibonacci.Greeter/nop 'nop'
+${GRPC_CLI}/grpc_cli call 127.0.0.1:11111 fibonacci.Greeter/nop 'nop'
 
 echo "Cache dropped!"
