@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"time"
 	"fmt"
+	"net"
 
 	"github.com/containerd/containerd/namespaces"
 	log "github.com/sirupsen/logrus"
@@ -85,10 +86,81 @@ func snapshot_basic(orch *ctriface.Orchestrator, ctx context.Context, vmID strin
 	}
 	log.Info("VM stopped")
 
-	if _, metrics, err := orch.LoadSnapshot(ctx, vmID, snap, mem_size); err != nil {
+	if _, metrics, err := orch.LoadSnapshot(ctx, vmID, snap, mem_size, false); err != nil {
 		return fmt.Errorf("failed to LoadSnapshot %v", err)
 	} else {
 		log.Info("VM loaded from the snapshot:")
+		metrics.PrintAll()
+	}
+
+	if err := orch.StopSingleVM(ctx, vmID); err != nil {
+		return fmt.Errorf("failed to stopVM.", err)
+	}
+	log.Info("VM stopped")
+
+	return nil
+}
+
+func snapshot_reap(orch *ctriface.Orchestrator, ctx context.Context, vmID string, image_name string, mem_size int, snapshot_type snapshotting.SnapshotType) error {
+	if err := orch.PauseVM(ctx, vmID); err != nil {
+		return fmt.Errorf("failed to PauseVM, error was: %v", err)
+	}
+	log.Info("VM paused")
+
+	revision := "myrev-4"
+	snap := snapshotting.NewSnapshot(revision, "/fccd/snapshots", image_name)
+	if err := snap.CreateSnapDir(); err != nil {
+		return fmt.Errorf("failed to CreateSnapDir %v", err)
+	}
+
+	snap.Type = snapshot_type
+
+	if err := orch.CreateSnapshot(ctx, vmID, snap); err != nil {
+		return fmt.Errorf("failed to CreateSnapshot %v", err)
+	}
+	log.Info("VM snapshotted")
+
+	if _, err := orch.ResumeVM(ctx, vmID); err != nil {
+		return fmt.Errorf("failed to ResumeVM %v", err)
+	}
+	log.Info("VM resumed")
+
+	if err := orch.StopSingleVM(ctx, vmID); err != nil {
+		return fmt.Errorf("failed to stopVM.", err)
+	}
+	log.Info("VM stopped")
+
+	// Load snapshot and do REAP record.
+	if _, metrics, err := orch.LoadSnapshot(ctx, vmID, snap, mem_size, true); err != nil {
+		return fmt.Errorf("failed to LoadSnapshot %v", err)
+	} else {
+		log.Info("VM loaded from the snapshot with REAP recording.")
+		metrics.PrintAll()
+	}
+
+	// Start recording.
+	conn, err := net.Dial("unix", "/tmp/reap.sock")
+	if err != nil {
+		return fmt.Errorf("Error dialing Reap recorder.")
+	}
+	fmt.Fprintf(conn, "RECORD")
+
+	// Stop recording.
+	time.Sleep(10 * time.Second)
+	fmt.Fprintf(conn, "STOP_RECORD")
+
+	time.Sleep(2 * time.Second)
+
+	if err := orch.StopSingleVM(ctx, vmID); err != nil {
+		return fmt.Errorf("failed to stopVM.", err)
+	}
+	log.Info("VM stopped")
+
+	// Load snapshot and do REAP reply.
+	if _, metrics, err := orch.LoadSnapshot(ctx, vmID, snap, mem_size, false); err != nil {
+		return fmt.Errorf("failed to LoadSnapshot %v", err)
+	} else {
+		log.Info("VM loaded from the snapshot with REAP reply.")
 		metrics.PrintAll()
 	}
 
@@ -138,6 +210,8 @@ func main() {
 		case "start-snapshot-stop-resume-stop": error_ = snapshot_basic(orch, ctx, vmID, *testImageNameFlag, *testMemorySizeFlag, snapshotting.FullSnapshot)
 		case "start-diff-snapshot-stop-resume-stop": error_ = snapshot_basic(orch, ctx, vmID, *testImageNameFlag, *testMemorySizeFlag, snapshotting.DiffSnapshot)
 		case "start-sabre-diff-snapshot-stop-resume-stop": error_ = snapshot_basic(orch, ctx, vmID, *testImageNameFlag, *testMemorySizeFlag, snapshotting.DiffSnapshotWithCompression)
+		case "start-snapshot-stop-resume-record-stop-replay-stop": error_ = snapshot_reap(orch, ctx, vmID, *testImageNameFlag, *testMemorySizeFlag, snapshotting.ReapSnapshot)
+		case "start-snapshot-stop-resume-record-stop-replay-stop-sabre": error_ = snapshot_reap(orch, ctx, vmID, *testImageNameFlag, *testMemorySizeFlag, snapshotting.ReapSnapshotWithCompression)
 		default: {
 			log.Info("Unknown experiment.")
 			error_ = stop(orch, ctx, vmID)

@@ -423,7 +423,7 @@ func (o *Orchestrator) CreateSnapshot(ctx context.Context, vmID string, snap *sn
 		DoCompression: false,
 	}
 
-	if snap.Type == snapshotting.DiffSnapshot {
+	if snap.Type == snapshotting.DiffSnapshot || snap.Type == snapshotting.ReapSnapshot || snap.Type == snapshotting.ReapSnapshotWithCompression {
 		req.DiffSnapshot = true
 	}
 
@@ -461,7 +461,7 @@ func (o *Orchestrator) CreateSnapshot(ctx context.Context, vmID string, snap *sn
 }
 
 // LoadSnapshot Loads a snapshot of a VM
-func (o *Orchestrator) LoadSnapshot(ctx context.Context, vmID string, snap *snapshotting.Snapshot, memSize int) (_ *StartVMResponse, _ *metrics.Metric, retErr error) {
+func (o *Orchestrator) LoadSnapshot(ctx context.Context, vmID string, snap *snapshotting.Snapshot, memSize int, reap_record bool) (_ *StartVMResponse, _ *metrics.Metric, retErr error) {
 	var (
 		loadSnapshotMetric   *metrics.Metric = metrics.NewMetric()
 		tStart               time.Time
@@ -510,12 +510,30 @@ func (o *Orchestrator) LoadSnapshot(ctx context.Context, vmID string, snap *snap
 	conf.MemFilePath = snap.GetMemFilePath()
 	conf.ContainerSnapshotPath = containerSnap.GetDevicePath()
 	conf.MachineCfg.MemSizeMib = uint32(memSize)
+	conf.LoadCompressedSnapshot = false
+	conf.LoadSnapshotAndRecord = false
+	conf.LoadSnapshotAndReply = false
 
 	conf.LoadSnapshot = true
 	if snap.Type == snapshotting.DiffSnapshotWithCompression {
 		conf.LoadCompressedSnapshot = true
-	} else {
-		conf.LoadCompressedSnapshot = false
+	}
+
+	// TODO(Nikita): make this API better.
+	if snap.Type == snapshotting.ReapSnapshot && reap_record {
+		conf.LoadSnapshotAndRecord = true
+	} 
+	if snap.Type == snapshotting.ReapSnapshot && !reap_record {
+		conf.LoadSnapshotAndReply = true
+	}
+
+	if snap.Type == snapshotting.ReapSnapshotWithCompression && reap_record {
+		conf.LoadSnapshotAndRecord = true
+		conf.LoadCompressedSnapshot = true
+	} 
+	if snap.Type == snapshotting.ReapSnapshotWithCompression && !reap_record {
+		conf.LoadSnapshotAndReply = true
+		conf.LoadCompressedSnapshot = true
 	}
 
 	if o.GetUPFEnabled() {

@@ -12,7 +12,7 @@ replace (
 replace github.com/coreos/go-systemd => github.com/coreos/go-systemd v0.0.0-20161114122254-48702e0da86b
 
 replace (
-	github.com/firecracker-microvm/firecracker-containerd => github.com/barabanshek/firecracker-containerd v0.1.0-f681a7d
+	github.com/firecracker-microvm/firecracker-containerd => github.com/barabanshek/firecracker-containerd v0.1.0-40e7dc6
 	github.com/vhive-serverless/vhive/examples/protobuf/helloworld => ./examples/protobuf/helloworld
 )
 

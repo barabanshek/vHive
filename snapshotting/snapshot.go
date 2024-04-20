@@ -40,6 +40,8 @@ const (
 	DiffSnapshot SnapshotType = 2
 	// There is no FullSnapshotWithCompression since it does not make sense
 	DiffSnapshotWithCompression SnapshotType = 3
+	ReapSnapshot SnapshotType = 4
+	ReapSnapshotWithCompression SnapshotType = 5
 )
 
 type Snapshot struct {
