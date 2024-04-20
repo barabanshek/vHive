@@ -3,26 +3,48 @@
 start=$(date +%s%N)
 
 # fibonacci
-#   - cmd: sudo -E env "PATH=$PATH" go run run_end2end.go -image=127.0.0.1:5000/fibonacci:latest -invoke_cmd='fibonacci' -snapshot='Diff' -memsize=512
-if [ "$1" = "fibonacci" ]; then
-echo "Invoking fibonacci"
+#   - cmd: sudo -E env "PATH=$PATH" go run run_reap_end2end.go -image=127.0.0.1:5000/fibonacci:latest -invoke_cmd='fibonacci' -snapshot='reap' -memsize=512
+if [ "$1" = "fibonacci" ] && [ "$2" = "record" ]; then
+echo "Invoking fibonacci for record"
 ${GRPC_CLI}/grpc_cli call 172.16.0.2:50051 fibonacci.Greeter/SayHello <<EOF
 name: '200'
 EOF
 fi
 
+if [ "$1" = "fibonacci" ] && [ "$2" = "replay" ]; then
+echo "Invoking fibonacci for reply"
+${GRPC_CLI}/grpc_cli call 172.16.0.2:50051 fibonacci.Greeter/SayHello <<EOF
+name: '400'
+EOF
+fi
+
 # python linked-list traversing
-#   - cmd: sudo -E env "PATH=$PATH" go run run_end2end.go -image=127.0.0.1:5000/python_list:latest -invoke_cmd='python_list' -snapshot='Diff' -memsize=512
-if [ "$1" = "python_list" ]; then
+#   - cmd: sudo -E env "PATH=$PATH" go run run_reap_end2end.go -image=127.0.0.1:5000/python_list:latest -invoke_cmd='python_list' -snapshot='reap' -memsize=512
+if [ "$1" = "python_list" ] && [ "$2" = "record" ]; then
 echo "Invoking python_list"
 ${GRPC_CLI}/grpc_cli call 172.16.0.2:50051 fibonacci.Greeter/SayHello <<EOF
 name: '200'
 EOF
 fi
 
+if [ "$1" = "python_list" ] && [ "$2" = "replay" ]; then
+echo "Invoking python_list"
+${GRPC_CLI}/grpc_cli call 172.16.0.2:50051 fibonacci.Greeter/SayHello <<EOF
+name: '400'
+EOF
+fi
+
 # image_processing, low resolution
-#   - cmd: sudo -E env "PATH=$PATH" go run run_end2end.go -image=127.0.0.1:5000/image_processing:latest -invoke_cmd='image_processing_low' -snapshot='Diff' -memsize=256
-if [ "$1" = "image_processing_low" ]; then
+#   - WARNING: we call the same argument for record and replay because the rotation happens inside the function
+#   - cmd: sudo -E env "PATH=$PATH" go run run_reap_end2end.go -image=127.0.0.1:5000/image_processing:latest -invoke_cmd='image_processing_low' -snapshot='reap' -memsize=512
+if [ "$1" = "image_processing_low" ] && [ "$2" = "record" ]; then
+echo "Invoking image processing with low resolution"
+${GRPC_CLI}/grpc_cli call 172.16.0.2:50051 fibonacci.Greeter/SayHello <<EOF
+name: 'low'
+EOF
+fi
+
+if [ "$1" = "image_processing_low" ] && [ "$2" = "replay" ]; then
 echo "Invoking image processing with low resolution"
 ${GRPC_CLI}/grpc_cli call 172.16.0.2:50051 fibonacci.Greeter/SayHello <<EOF
 name: 'low'
@@ -30,20 +52,52 @@ EOF
 fi
 
 # image_processing, hd resolution
-#   - cmd: sudo -E env "PATH=$PATH" go run run_end2end.go -image=127.0.0.1:5000/image_processing:latest -invoke_cmd='image_processing_hd' -snapshot='Diff' -memsize=512
-if [ "$1" = "image_processing_hd" ]; then
+#   - WARNING: we call the same argument for record and replay because the rotation happens inside the function
+#   - cmd: sudo -E env "PATH=$PATH" go run run_reap_end2end.go -image=127.0.0.1:5000/image_processing:latest -invoke_cmd='image_processing_hd' -snapshot='reap' -memsize=512
+if [ "$1" = "image_processing_hd" ] && [ "$2" = "record" ]; then
 echo "Invoking image processing with hd resolution"
 ${GRPC_CLI}/grpc_cli call 172.16.0.2:50051 fibonacci.Greeter/SayHello <<EOF
 name: 'hd'
 EOF
 fi
 
-# matmul
-#   - cmd: sudo -E env "PATH=$PATH" go run run_end2end.go -image=127.0.0.1:5000/matmul:latest -invoke_cmd='matmul' -snapshot='Diff' -memsize=1024
-if [ "$1" = "matmul" ]; then
-echo "Invoking matmul"
+if [ "$1" = "image_processing_hd" ] && [ "$2" = "replay" ]; then
+echo "Invoking image processing with hd resolution"
 ${GRPC_CLI}/grpc_cli call 172.16.0.2:50051 fibonacci.Greeter/SayHello <<EOF
-name: '2000'
+name: 'hd'
+EOF
+fi
+
+# image_processing, default images from the original benchmark
+#   - cmd: sudo -E env "PATH=$PATH" go run run_reap_end2end.go -image=127.0.0.1:5000/image_processing:latest -invoke_cmd='image_processing_default' -snapshot='reap' -memsize=512
+if [ "$1" = "image_processing_default" ] && [ "$2" = "record" ]; then
+echo "Invoking image processing with hd resolution"
+${GRPC_CLI}/grpc_cli call 172.16.0.2:50051 fibonacci.Greeter/SayHello <<EOF
+name: 'record'
+EOF
+fi
+
+if [ "$1" = "image_processing_default" ] && [ "$2" = "replay" ]; then
+echo "Invoking image processing with hd resolution"
+${GRPC_CLI}/grpc_cli call 172.16.0.2:50051 fibonacci.Greeter/SayHello <<EOF
+name: 'replay'
+EOF
+fi
+
+# matmul
+#   - WARNING: we call the same argument for record and replay because matmul inside generates random data every invokation
+#   - cmd: sudo -E env "PATH=$PATH" go run run_reap_end2end.go -image=127.0.0.1:5000/matmul:latest -invoke_cmd='matmul' -snapshot='reap' -memsize=1024
+if [ "$1" = "matmul" ] && [ "$2" = "record" ]; then
+echo "Invoking matmul record"
+${GRPC_CLI}/grpc_cli call 172.16.0.2:50051 fibonacci.Greeter/SayHello <<EOF
+name: '100'
+EOF
+fi
+
+if [ "$1" = "matmul" ] && [ "$2" = "replay" ]; then
+echo "Invoking matmul replay"
+${GRPC_CLI}/grpc_cli call 172.16.0.2:50051 fibonacci.Greeter/SayHello <<EOF
+name: '100'
 EOF
 fi
 

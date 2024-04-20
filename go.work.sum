@@ -26,6 +26,8 @@ github.com/andybalholm/stroke v0.0.0-20221221101821-bd29b49d73f0/go.mod h1:ccdDY
 github.com/antihax/optional v1.0.0/go.mod h1:uupD/76wgC+ih3iEmQUL+0Ugr19nfwCT1kdvxnR2qWY=
 github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d/go.mod h1:WaHUgvxTVq04UNunO+XhnAqY/wQc+bxr74GqbsZ/Jqw=
 github.com/awslabs/tc-redirect-tap v0.0.0-20211025175357-e30dfca224c2/go.mod h1:aWGDsVdyHc6k3HOw2xeeNTGFHnHxG05VVUxEoKkpMdo=
+github.com/barabanshek/firecracker-containerd v0.1.0-40e7dc6 h1:BksR2N3+GwyGeFJtXK8eLX2fyqhRIiHwtNfgs2kyRZI=
+github.com/barabanshek/firecracker-containerd v0.1.0-40e7dc6/go.mod h1:mzcYoEN2LoRfwGE4KLAoUgD+yT0B2Di3PIEPH3TDU1o=
 github.com/barabanshek/firecracker-containerd v0.1.0-43f6e71 h1:HGt8QtzVeQsuRC9AOiGOmPmksqZBjyvSd7mUBoNViLA=
 github.com/barabanshek/firecracker-containerd v0.1.0-43f6e71/go.mod h1:HPKQwkC2ZwD5y7tmnZG1nCcdAbB/2AQ8DIQ29/7BVmI=
 github.com/barabanshek/firecracker-containerd v0.1.0-45d6c17 h1:LzcMQHxuDQ+h4VVKxmcanAqiMtTbNiT8/Qfq45OkROM=

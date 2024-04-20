@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"strconv"
 	"os"
+	"net"
 
 	"github.com/containerd/containerd/namespaces"
 	log "github.com/sirupsen/logrus"
@@ -22,6 +23,7 @@ import (
 var (
 	isUPFEnabled = flag.Bool("upf", false, "Set UPF enabled")
 	isLazyMode   = flag.Bool("lazy", false, "Set lazy serving on or off")
+	reapSock = "/tmp/reap.sock"
 )
 
 // AUX.
@@ -75,8 +77,8 @@ func getTimeElapsedMicroseconds(log string) (int, error) {
     return microseconds, nil
 }
 
-func invokeServer(testInvocationCommand string) (int, error) {
-	var sh_cmd *exec.Cmd = exec.Command("/bin/sh", "invoke.sh", testInvocationCommand)
+func invokeServer(testInvocationCommand string, phase string) (int, error) {
+	var sh_cmd *exec.Cmd = exec.Command("/bin/sh", "invoke_reap.sh", testInvocationCommand, phase)
 	var outb, errb bytes.Buffer
 	sh_cmd.Stdout = &outb
 	sh_cmd.Stderr = &errb
@@ -114,7 +116,7 @@ func dropCaches(orch *ctriface.Orchestrator, ctx context.Context) error {
 	return nil
 }
 
-func snapshot_basic(orch *ctriface.Orchestrator, ctx context.Context, vmID string, image_name string, mem_size int, snapshot_type snapshotting.SnapshotType) (error, float64) {
+func snapshot_reap(orch *ctriface.Orchestrator, ctx context.Context, vmID string, image_name string, mem_size int, invocation_cmd string, snapshot_type snapshotting.SnapshotType) (error, float64) {
 	if err := orch.PauseVM(ctx, vmID); err != nil {
 		return fmt.Errorf("failed to PauseVM, error was: %v", err), -1
 	}
@@ -145,17 +147,48 @@ func snapshot_basic(orch *ctriface.Orchestrator, ctx context.Context, vmID strin
 	log.Info("VM stopped")
 
 	// Drop caches before loading from the snapshot.
-	// This way, we emulate cold start in the same way as we would be
-	// loading the snapshot on a new machine.
 	if err := dropCaches(orch, ctx); err != nil {
 		return fmt.Errorf("failed to srop caches."), -1
 	}
 
+	if _, metrics, err := orch.LoadSnapshot(ctx, vmID, snap, mem_size, true); err != nil {
+		return fmt.Errorf("failed to LoadSnapshot %v", err), -1
+	} else {
+		log.Info("VM loaded from the snapshot:")
+		metrics.PrintAll()
+	}
+
+	// Start recording.
+	conn, err := net.Dial("unix", reapSock)
+	if err != nil {
+		return fmt.Errorf("Error dialing Reap recorder."), -1
+	}
+	fmt.Fprintf(conn, "RECORD")
+
+	// Invoke.
+	if _, err := invokeServer(invocation_cmd, "record"); err != nil {
+		return fmt.Errorf("Failed to invoke a function for recording"), -1
+	}
+
+	// Stop recording.
+	fmt.Fprintf(conn, "STOP_RECORD")
+
+	if err := orch.StopSingleVM(ctx, vmID); err != nil {
+		return fmt.Errorf("failed to stopVM.", err), -1
+	}
+	log.Info("VM stopped")
+
+	// Drop caches before loading from the snapshot.
+	if err := dropCaches(orch, ctx); err != nil {
+		return fmt.Errorf("failed to srop caches."), -1
+	}
+
+	// Load snapshot and do REAP replay.
 	latency := 0.0
 	if _, metrics, err := orch.LoadSnapshot(ctx, vmID, snap, mem_size, false); err != nil {
 		return fmt.Errorf("failed to LoadSnapshot %v", err), -1
 	} else {
-		log.Info("VM loaded from the snapshot:")
+		log.Info("VM loaded from the snapshot with REAP replay.")
 		metrics.PrintAll()
 		latency = metrics.Total()
 	}
@@ -201,7 +234,7 @@ func main() {
 		time.Sleep(10 * time.Second)
 
 		// Invoke.
-		if _, err := invokeServer(*testInvocationCmdFlag); err != nil {
+		if _, err := invokeServer(*testInvocationCmdFlag, "record"); err != nil {
 			log.Fatal("Failed to invoke a function")
 			error_ = error_ || true
 		}
@@ -209,18 +242,18 @@ func main() {
 		time.Sleep(1 * time.Second)
 
 		// Make a snapshot, load from snapshot.
-		if *testSnapshotTypeFlag == "Diff" {
-			log.Info("Running with Diff snapshot...")
-			if err, lat := snapshot_basic(orch, ctx, vmID, *testImageNameFlag, *testMemorySizeFlag, snapshotting.DiffSnapshot); err != nil {
+		if *testSnapshotTypeFlag == "reap" {
+			log.Info("Running with REAP snapshot...")
+			if err, lat := snapshot_reap(orch, ctx, vmID, *testImageNameFlag, *testMemorySizeFlag, *testInvocationCmdFlag, snapshotting.ReapSnapshot); err != nil {
 				log.Fatal("Failed to make-load snapshot")
 				error_ = error_ || true
 			} else {
 				lat_restore_snapshot = lat
 			}
 		}
-		if *testSnapshotTypeFlag == "DiffCompressed" {
-			log.Info("Running with DiffCompressed (Sabre) snapshot...")
-			if err, lat := snapshot_basic(orch, ctx, vmID, *testImageNameFlag, *testMemorySizeFlag, snapshotting.DiffSnapshotWithCompression); err != nil {
+		if *testSnapshotTypeFlag == "reapCompressed" {
+			log.Info("Running with REAP compressed (Sabre) snapshot...")
+			if err, lat := snapshot_reap(orch, ctx, vmID, *testImageNameFlag, *testMemorySizeFlag, *testInvocationCmdFlag, snapshotting.ReapSnapshotWithCompression); err != nil {
 				log.Fatal("Failed to make-load snapshot")
 				error_ = error_ || true
 			} else {
@@ -231,7 +264,7 @@ func main() {
 		time.Sleep(10 * time.Second)
 
 		// Invoke again.
-		if lat, err := invokeServer(*testInvocationCmdFlag); err != nil {
+		if lat, err := invokeServer(*testInvocationCmdFlag, "replay"); err != nil {
 			log.Fatal("Failed to invoke a function")
 			error_ = error_ || true
 		} else {
@@ -251,5 +284,10 @@ func main() {
 		fmt.Fprintf(os.Stdout, "\033[0m")
 	} else {
 		log.Fatal("Experiment crashed.")
+	}
+
+	// Remove REAP listening socket.
+	if err := os.Remove(reapSock); err != nil {
+		log.Info("REAP recorder listening socker has not been removed.")
 	}
 }

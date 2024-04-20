@@ -7,6 +7,7 @@ import (
 	"time"
 	"fmt"
 	"net"
+	"os"
 
 	"github.com/containerd/containerd/namespaces"
 	log "github.com/sirupsen/logrus"
@@ -16,8 +17,7 @@ import (
 
 // Configs.
 var (
-	isUPFEnabled = flag.Bool("upf", false, "Set UPF enabled")
-	isLazyMode   = flag.Bool("lazy", false, "Set lazy serving on or off")
+	reapSock = "/tmp/reap.sock"
 )
 
 // AUX.
@@ -139,7 +139,7 @@ func snapshot_reap(orch *ctriface.Orchestrator, ctx context.Context, vmID string
 	}
 
 	// Start recording.
-	conn, err := net.Dial("unix", "/tmp/reap.sock")
+	conn, err := net.Dial("unix", reapSock)
 	if err != nil {
 		return fmt.Errorf("Error dialing Reap recorder.")
 	}
@@ -176,9 +176,9 @@ func main() {
 	log.Info("Starting e2e experiments.")
 
 	// Parse inputs.
-	testImageNameFlag := flag.String("image", "image", "image name")
-	testMemorySizeFlag := flag.Int("memsize", 256, "memory size in MB")
-	testExampleNameFlag := flag.String("example", "start-stop", "example to execuute")
+	testImageNameFlag := flag.String("image", "docker.io/library/hello-world:latest", "image name to use")
+	testMemorySizeFlag := flag.Int("memsize", 256, "uVM memory size in MB")
+	testExampleNameFlag := flag.String("example", "start-stop", "example scenario to execute")
 	flag.Parse()
 
 	// Initialize the context.
@@ -195,8 +195,8 @@ func main() {
 		*snapshotter,
 		"",
 		ctriface.WithTestModeOn(testModeOn),
-		ctriface.WithUPF(*isUPFEnabled),
-		ctriface.WithLazyMode(*isLazyMode),
+		ctriface.WithUPF(false),
+		ctriface.WithLazyMode(false),
 	)
 
 	//
@@ -223,5 +223,10 @@ func main() {
 		log.Info("Examples finished, bye!")
 	} else {
 		log.Fatal("Examples crashed.")
+	}
+	
+	// Remove REAP listening socket.
+	if err := os.Remove(reapSock); err != nil {
+		log.Info("REAP recorder listening socker has not been removed.")
 	}
 }
