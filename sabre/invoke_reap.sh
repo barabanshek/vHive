@@ -85,7 +85,7 @@ EOF
 fi
 
 # matmul
-#   - WARNING: we call the same argument for record and replay because matmul inside generates random data every invokation
+#   - WARNING: we call the same argument for record and replay because matmul inside generates random data every invocation
 #   - cmd: sudo -E env "PATH=$PATH" go run run_reap_end2end.go -image=127.0.0.1:5000/matmul:latest -invoke_cmd='matmul' -snapshot='reap' -memsize=1024
 if [ "$1" = "matmul" ] && [ "$2" = "record" ]; then
 echo "Invoking matmul record"
@@ -102,62 +102,113 @@ EOF
 fi
 
 # chameleon
-#   - cmd: sudo -E env "PATH=$PATH" go run run_end2end.go -image=127.0.0.1:5000/chameleon:latest -invoke_cmd='chameleon' -snapshot='Diff' -memsize=512
-if [ "$1" = "chameleon" ]; then
-echo "Invoking chameleon"
+#   - WARNING: we call the same argument for record and replay because matmul inside generates random data every invocation
+#   - cmd: sudo -E env "PATH=$PATH" go run run_reap_end2end.go -image=127.0.0.1:5000/chameleon:latest -invoke_cmd='chameleon' -snapshot='reap' -memsize=512
+if [ "$1" = "chameleon" ] && [ "$2" = "record" ]; then
+echo "Invoking chameleon record"
+${GRPC_CLI}/grpc_cli call 172.16.0.2:50051 fibonacci.Greeter/SayHello <<EOF
+name: '100'
+EOF
+fi
+
+if [ "$1" = "chameleon" ] && [ "$2" = "replay" ]; then
+echo "Invoking chameleon replay"
 ${GRPC_CLI}/grpc_cli call 172.16.0.2:50051 fibonacci.Greeter/SayHello <<EOF
 name: '100'
 EOF
 fi
 
 # video_processing
-#   - cmd: sudo -E env "PATH=$PATH" go run run_end2end.go -image=127.0.0.1:5000/video_processing:latest -invoke_cmd='video_processing' -snapshot='Diff' -memsize=512
-if [ "$1" = "video_processing" ]; then
-echo "Invoking video_processing"
+#   - cmd: sudo -E env "PATH=$PATH" go run run_reap_end2end.go -image=127.0.0.1:5000/video_processing:latest -invoke_cmd='video_processing' -snapshot='reap' -memsize=512
+if [ "$1" = "video_processing" ] && [ "$2" = "record" ]; then
+echo "Invoking video_processing record"
 ${GRPC_CLI}/grpc_cli call 172.16.0.2:50051 fibonacci.Greeter/SayHello <<EOF
-name: "lowres2"
+name: "record"
+EOF
+fi
+
+if [ "$1" = "video_processing" ] && [ "$2" = "replay" ]; then
+echo "Invoking video_processing replay"
+${GRPC_CLI}/grpc_cli call 172.16.0.2:50051 fibonacci.Greeter/SayHello <<EOF
+name: "replay"
 EOF
 fi
 
 # ml_serving
-#   - cmd: sudo -E env "PATH=$PATH" go run run_end2end.go -image=127.0.0.1:5000/ml_lr_prediction:latest -invoke_cmd='ml_serving' -snapshot='Diff' -memsize=512
-if [ "$1" = "ml_serving" ]; then
-echo "Invoking ml_serving"
+#   - cmd: sudo -E env "PATH=$PATH" go run run_reap_end2end.go -image=127.0.0.1:5000/ml_lr_prediction:latest -invoke_cmd='ml_serving' -snapshot='reap' -memsize=512
+if [ "$1" = "ml_serving" ] && [ "$2" = "record" ]; then
+echo "Invoking ml_serving record"
 ${GRPC_CLI}/grpc_cli call 172.16.0.2:50051 fibonacci.Greeter/SayHello <<EOF
 name: "any dummy request"
 EOF
 fi
 
-# cnn_image_classification
-#   - cmd: sudo -E env "PATH=$PATH" go run run_end2end.go -image=127.0.0.1:5000/cnn_image_classification:latest -invoke_cmd='cnn_image_classification' -snapshot='Diff' -memsize=1024
-if [ "$1" = "cnn_image_classification" ]; then
-echo "Invoking cnn_image_classification"
+if [ "$1" = "ml_serving" ] && [ "$2" = "replay" ]; then
+echo "Invoking ml_serving replay"
 ${GRPC_CLI}/grpc_cli call 172.16.0.2:50051 fibonacci.Greeter/SayHello <<EOF
-name: "low"
+name: "another dummy request, different length too"
+EOF
+fi
+
+# cnn_image_classification
+#   - cmd: sudo -E env "PATH=$PATH" go run run_reap_end2end.go -image=127.0.0.1:5000/cnn_image_classification:latest -invoke_cmd='cnn_image_classification' -snapshot='reap' -memsize=1024
+if [ "$1" = "cnn_image_classification" ] && [ "$2" = "record" ]; then
+echo "Invoking cnn_image_classification record"
+${GRPC_CLI}/grpc_cli call 172.16.0.2:50051 fibonacci.Greeter/SayHello <<EOF
+name: "record"
+EOF
+fi
+
+if [ "$1" = "cnn_image_classification" ] && [ "$2" = "replay" ]; then
+echo "Invoking cnn_image_classification replay"
+${GRPC_CLI}/grpc_cli call 172.16.0.2:50051 fibonacci.Greeter/SayHello <<EOF
+name: "replay"
 EOF
 fi
 
 # rnn_serving
-#   - cmd: sudo -E env "PATH=$PATH" go run run_end2end.go -image=127.0.0.1:5000/rnn_generate_character_level:latest -invoke_cmd='rnn_serving' -snapshot='Diff' -memsize=512
-if [ "$1" = "rnn_serving" ]; then
-echo "Invoking rnn_serving"
+#   - cmd: sudo -E env "PATH=$PATH" go run run_reap_end2end.go -image=127.0.0.1:5000/rnn_generate_character_level:latest -invoke_cmd='rnn_serving' -snapshot='reap' -memsize=1024
+if [ "$1" = "rnn_serving" ] && [ "$2" = "record" ]; then
+echo "Invoking rnn_serving record"
 ${GRPC_CLI}/grpc_cli call 172.16.0.2:50051 fibonacci.Greeter/SayHello <<EOF
 name: "any text input"
 EOF
 fi
 
-# bfs
-#   - cmd: sudo -E env "PATH=$PATH" go run run_end2end.go -image=127.0.0.1:5000/bfs:latest -invoke_cmd='bfs' -snapshot='Diff' -memsize=512
-if [ "$1" = "bfs" ]; then
-echo "Invoking bfs"
+if [ "$1" = "rnn_serving" ] && [ "$2" = "replay" ]; then
+echo "Invoking rnn_serving replay"
 ${GRPC_CLI}/grpc_cli call 172.16.0.2:50051 fibonacci.Greeter/SayHello <<EOF
-name: '50000'
+name: "another text input, different"
+EOF
+fi
+
+# bfs
+#   - cmd: sudo -E env "PATH=$PATH" go run run_reap_end2end.go -image=127.0.0.1:5000/bfs:latest -invoke_cmd='bfs' -snapshot='reap' -memsize=512
+if [ "$1" = "bfs" ] && [ "$2" = "record" ]; then
+echo "Invoking bfs record"
+${GRPC_CLI}/grpc_cli call 172.16.0.2:50051 fibonacci.Greeter/SayHello <<EOF
+name: '60000'
+EOF
+fi
+
+if [ "$1" = "bfs" ] && [ "$2" = "replay" ]; then
+echo "Invoking bfs replay"
+${GRPC_CLI}/grpc_cli call 172.16.0.2:50051 fibonacci.Greeter/SayHello <<EOF
+name: '30000'
 EOF
 fi
 
 # dna_visualization_big
-#   - cmd: sudo -E env "PATH=$PATH" go run run_end2end.go -image=127.0.0.1:5000/dna_visualization:latest -invoke_cmd='dna_visualization_big' -snapshot='Diff' -memsize=1024
-if [ "$1" = "dna_visualization_big" ]; then
+#   - WARNING: invoking same call here for record and replay as in the original benchmark; this makes sense though
+#   - cmd: sudo -E env "PATH=$PATH" go run run_reap_end2end.go -image=127.0.0.1:5000/dna_visualization:latest -invoke_cmd='dna_visualization_big' -snapshot='reap' -memsize=1024
+if [ "$1" = "dna_visualization_big" ] && [ "$2" = "record" ]; then
+echo "Invoking dna_visualization_big"
+${GRPC_CLI}/grpc_cli call 172.16.0.2:50051 fibonacci.Greeter/SayHello <<EOF
+name: "big"
+EOF
+fi
+
+if [ "$1" = "dna_visualization_big" ] && [ "$2" = "replay" ]; then
 echo "Invoking dna_visualization_big"
 ${GRPC_CLI}/grpc_cli call 172.16.0.2:50051 fibonacci.Greeter/SayHello <<EOF
 name: "big"
@@ -165,11 +216,35 @@ EOF
 fi
 
 # dna_visualization_verybig
-#   - cmd: sudo -E env "PATH=$PATH" go run run_end2end.go -image=127.0.0.1:5000/dna_visualization:latest -invoke_cmd='dna_visualization_verybig' -snapshot='Diff' -memsize=1024
-if [ "$1" = "dna_visualization_verybig" ]; then
+#   - WARNING: invoking same call here for record and replay as in the original benchmark; this makes sense though
+#   - cmd: sudo -E env "PATH=$PATH" go run run_reap_end2end.go -image=127.0.0.1:5000/dna_visualization:latest -invoke_cmd='dna_visualization_verybig' -snapshot='reap' -memsize=2048
+if [ "$1" = "dna_visualization_verybig" ] && [ "$2" = "record" ]; then
 echo "Invoking dna_visualization_verybig"
 ${GRPC_CLI}/grpc_cli call 172.16.0.2:50051 fibonacci.Greeter/SayHello <<EOF
 name: "verybig"
+EOF
+fi
+
+if [ "$1" = "dna_visualization_verybig" ] && [ "$2" = "replay" ]; then
+echo "Invoking dna_visualization_verybig"
+${GRPC_CLI}/grpc_cli call 172.16.0.2:50051 fibonacci.Greeter/SayHello <<EOF
+name: "verybig"
+EOF
+fi
+
+# dna_visualization_different_input
+#   - cmd: sudo -E env "PATH=$PATH" go run run_reap_end2end.go -image=127.0.0.1:5000/dna_visualization:latest -invoke_cmd='dna_visualization_different_input' -snapshot='reap' -memsize=2048
+if [ "$1" = "dna_visualization_different_input" ] && [ "$2" = "record" ]; then
+echo "Invoking dna_visualization_different_input"
+${GRPC_CLI}/grpc_cli call 172.16.0.2:50051 fibonacci.Greeter/SayHello <<EOF
+name: "record"
+EOF
+fi
+
+if [ "$1" = "dna_visualization_different_input" ] && [ "$2" = "replay" ]; then
+echo "Invoking dna_visualization_different_input"
+${GRPC_CLI}/grpc_cli call 172.16.0.2:50051 fibonacci.Greeter/SayHello <<EOF
+name: "replay"
 EOF
 fi
 
@@ -182,11 +257,18 @@ EOF
 fi
 
 # pagerank
-#   - cmd: sudo -E env "PATH=$PATH" go run run_end2end.go -image=127.0.0.1:5000/pagerank:latest -invoke_cmd='pagerank' -snapshot='Diff' -memsize=512
-if [ "$1" = "pagerank" ]; then
-echo "Invoking pagerank"
+#   - cmd: sudo -E env "PATH=$PATH" go run run_reap_end2end.go -image=127.0.0.1:5000/pagerank:latest -invoke_cmd='pagerank' -snapshot='reap' -memsize=512
+if [ "$1" = "pagerank" ] && [ "$2" = "record" ]; then
+echo "Invoking pagerank record"
 ${GRPC_CLI}/grpc_cli call 172.16.0.2:50051 fibonacci.Greeter/SayHello <<EOF
 name: "50000"
+EOF
+fi
+
+if [ "$1" = "pagerank" ] && [ "$2" = "replay" ]; then
+echo "Invoking pagerank replay"
+${GRPC_CLI}/grpc_cli call 172.16.0.2:50051 fibonacci.Greeter/SayHello <<EOF
+name: "40000"
 EOF
 fi
 
@@ -198,17 +280,32 @@ name: "$2"
 EOF
 fi
 
-# model_training
-#   - cmd: sudo -E env "PATH=$PATH" go run run_end2end.go -image=127.0.0.1:5000/model_training:latest -invoke_cmd='model_training_10mb' -snapshot='Diff' -memsize=512
-if [ "$1" = "model_training_10mb" ]; then
+# model_training_10mb
+#   - cmd: sudo -E env "PATH=$PATH" go run run_reap_end2end.go -image=127.0.0.1:5000/model_training:latest -invoke_cmd='model_training_10mb' -snapshot='reap' -memsize=512
+if [ "$1" = "model_training_10mb" ] && [ "$2" = "record" ]; then
+echo "Invoking model_training record"
+${GRPC_CLI}/grpc_cli call 172.16.0.2:50051 fibonacci.Greeter/SayHello <<EOF
+name: "reviews20mb.csv"
+EOF
+fi
+
+if [ "$1" = "model_training_10mb" ] && [ "$2" = "replay" ]; then
+echo "Invoking model_training replay"
+${GRPC_CLI}/grpc_cli call 172.16.0.2:50051 fibonacci.Greeter/SayHello <<EOF
+name: "reviews10mb.csv"
+EOF
+fi
+
+# model_training_20mb
+#   - cmd: sudo -E env "PATH=$PATH" go run run_reap_end2end.go -image=127.0.0.1:5000/model_training:latest -invoke_cmd='model_training_20mb' -snapshot='reap' -memsize=512
+if [ "$1" = "model_training_20mb" ] && [ "$2" = "record" ]; then
 echo "Invoking model_training"
 ${GRPC_CLI}/grpc_cli call 172.16.0.2:50051 fibonacci.Greeter/SayHello <<EOF
 name: "reviews10mb.csv"
 EOF
 fi
 
-#   - cmd: sudo -E env "PATH=$PATH" go run run_end2end.go -image=127.0.0.1:5000/model_training:latest -invoke_cmd='model_training_20mb' -snapshot='Diff' -memsize=512
-if [ "$1" = "model_training_20mb" ]; then
+if [ "$1" = "model_training_20mb" ] && [ "$2" = "replay" ]; then
 echo "Invoking model_training"
 ${GRPC_CLI}/grpc_cli call 172.16.0.2:50051 fibonacci.Greeter/SayHello <<EOF
 name: "reviews20mb.csv"

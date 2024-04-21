@@ -111,7 +111,7 @@ EOF
 fi
 
 # dna_visualization_verybig
-#   - cmd: sudo -E env "PATH=$PATH" go run run_end2end.go -image=127.0.0.1:5000/dna_visualization:latest -invoke_cmd='dna_visualization_verybig' -snapshot='Diff' -memsize=1024
+#   - cmd: sudo -E env "PATH=$PATH" go run run_end2end.go -image=127.0.0.1:5000/dna_visualization:latest -invoke_cmd='dna_visualization_verybig' -snapshot='Diff' -memsize=2048
 if [ "$1" = "dna_visualization_verybig" ]; then
 echo "Invoking dna_visualization_verybig"
 ${GRPC_CLI}/grpc_cli call 172.16.0.2:50051 fibonacci.Greeter/SayHello <<EOF
