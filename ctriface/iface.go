@@ -273,8 +273,10 @@ func (o *Orchestrator) StopSingleVM(ctx context.Context, vmID string) error {
 	//	}
 	//}
 
+	// FIXME(Nikita): sometimes StopVM returns an error while working correctly.
 	if _, err := o.fcClient.StopVM(ctx, &proto.StopVMRequest{VMID: vmID}); err != nil {
-		logger.WithError(err).Error("failed to stop firecracker-containerd VM")
+		// logger.WithError(err).Error("failed to stop firecracker-containerd VM")
+		logger.Debug("failed to stop firecracker-containerd VM")
 	}
 
 	if err := o.vmPool.Free(vmID); err != nil {
